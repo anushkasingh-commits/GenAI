@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="qrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="50%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#qrGrad)" />
+  <path d="M16 16h14v14H16V16zm4 4v6h6v-6h-6zm14-4h14v14H34V16zm4 4v6h6v-6h-6zM16 34h14v14H16V34zm4 4v6h6v-6h-6zm18-4h4v4h-4v-4zm6 0h4v4h-4v-4zm-6 6h4v4h-4v-4zm6 0h4v4h-4v-4zm-6 6h4v4h-4v-4zm6 0h4v4h-4v-4zm-16-6h4v4h-4v-4z" fill="#ffffff" />
+</svg>

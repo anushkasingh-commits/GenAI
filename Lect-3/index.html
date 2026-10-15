@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anushka's AI Tutor | Personal Learning Assistant</title>
+  <meta name="description" content="A lightweight, beginner-friendly personal AI tutor for Anushka powered by Google Gemini.">
+  
+  <!-- Google Fonts: Outfit & Fira Code -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Markdown parser & highlight.js for clean code rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark-theme">
+  <div class="app-container">
+    
+    <!-- Top Navigation / Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="avatar-badge">
+          <span class="avatar-icon">🎓</span>
+          <span class="status-dot online"></span>
+        </div>
+        <div class="header-title-group">
+          <h1>Anushka's AI Tutor</h1>
+          <p class="subtitle">Personal Learning Companion &bull; Powered by Gemini</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- API Key Status Indicator / Button -->
+        <button id="apiKeyModalBtn" class="btn-secondary key-btn" title="Configure Gemini API Key" aria-label="Configure Gemini API Key">
+          <span class="key-icon">🔑</span>
+          <span id="keyStatusText">API Key: Not Set</span>
+          <span id="keyStatusIndicator" class="badge-status disconnected"></span>
+        </button>
+
+        <!-- Theme Toggle Button -->
+        <button id="themeToggleBtn" class="btn-icon" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+          <span id="themeIcon">🌙</span>
+        </button>
+
+        <!-- Reset Conversation Button -->
+        <button id="clearChatBtn" class="btn-icon danger" title="Clear Conversation" aria-label="Clear Conversation">
+          <span>🗑️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Chat Workspace -->
+    <main class="chat-main">
+      
+      <!-- Quick Prompt Suggestions Bar -->
+      <section class="prompt-chips-section" aria-label="Suggested Prompts">
+        <div class="chips-scroll-container">
+          <span class="chips-label">💡 Try asking:</span>
+          <button class="chip" data-prompt="Hi!">👋 "Hi!"</button>
+          <button class="chip" data-prompt="Is C++ compiled?">⚡ "Is C++ compiled?" (Short mode)</button>
+          <button class="chip" data-prompt="Summarize Binary Search in valid JSON format only with answer and complexity fields">📊 JSON Mode Demo</button>
+          <button class="chip" data-prompt="Explain recursion in simple terms with a real-life analogy">🧩 Explain Recursion</button>
+          <button class="chip" data-prompt="What is the difference between let and const in JavaScript?">💻 let vs const in JS</button>
+          <button class="chip" data-prompt="Tell me a funny programming joke">😄 Programming Joke</button>
+        </div>
+      </section>
+
+      <!-- Chat Messages Container -->
+      <section class="chat-messages-container" id="chatContainer" aria-label="Conversation Messages" role="log" aria-live="polite">
+        <!-- Messages will be rendered dynamically here -->
+      </section>
+
+      <!-- Chat Input Area -->
+      <footer class="chat-input-wrapper">
+        <!-- Optional Mode Selector Pills -->
+        <div class="input-toolbar">
+          <div class="mode-toggles">
+            <span class="mode-title">Response Style:</span>
+            <button class="mode-pill active" data-mode="normal" title="Normal student-friendly explanation">Normal</button>
+            <button class="mode-pill" data-mode="concise" title="Ultra short / one-word answer">⚡ Concise / 1-Word</button>
+            <button class="mode-pill" data-mode="json" title="Request output in strict JSON format">📊 JSON Only</button>
+          </div>
+          <div class="model-badge" id="currentModelBadge">Model: gemini-1.5-flash</div>
+        </div>
+
+        <form id="chatForm" class="input-form">
+          <textarea 
+            id="messageInput" 
+            placeholder="Ask anything about coding, DSA, web dev, or chat with your tutor..." 
+            rows="1"
+            aria-label="Message to AI Tutor"
+            required
+          ></textarea>
+          
+          <button type="submit" id="sendBtn" class="send-btn" title="Send message (Enter)" aria-label="Send message">
+            <svg class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </form>
+        <p class="input-hint">Press <kbd>Enter</kbd> to send, <kbd>Shift + Enter</kbd> for a new line</p>
+      </footer>
+
+    </main>
+
+    <!-- Settings / API Key Modal -->
+    <dialog id="apiKeyDialog" class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-icon">🔑</span>
+            <h2>Gemini API Configuration</h2>
+          </div>
+          <button id="closeModalBtn" class="btn-close" aria-label="Close modal">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-description">
+            Enter your Google Gemini API key to interact with your tutor. Your key is stored securely in your browser's local session and is <strong>never uploaded anywhere else</strong>.
+          </p>
+
+          <div class="form-group">
+            <label for="apiKeyInput">Gemini API Key</label>
+            <div class="password-input-wrap">
+              <input 
+                type="password" 
+                id="apiKeyInput" 
+                placeholder="AIzaSy..." 
+                autocomplete="off" 
+                spellcheck="false"
+              />
+              <button type="button" id="toggleKeyVisibility" class="toggle-vis-btn" title="Show/Hide Key" aria-label="Toggle Key Visibility">
+                👁️
+              </button>
+            </div>
+            <p class="field-hint">
+              Don't have a key? Get a free one at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio ↗</a>
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label for="modelSelect">Gemini Model</label>
+            <select id="modelSelect" class="form-select">
+              <option value="gemini-2.5-flash" selected>gemini-2.5-flash (Fast & Recommended)</option>
+              <option value="gemini-2.0-flash">gemini-2.0-flash (Latest Flash Model)</option>
+              <option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
+              <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+              <option value="gemini-1.5-pro">gemini-1.5-pro (High Reasoning)</option>
+            </select>
+          </div>
+
+          <!-- Validation Alert / Feedback -->
+          <div id="apiTestFeedback" class="alert-box hidden" role="alert"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="clearSavedKeyBtn" class="btn-secondary danger">Remove Key</button>
+          <div class="footer-actions">
+            <button type="button" id="testKeyBtn" class="btn-secondary">Test Connection</button>
+            <button type="button" id="saveKeyBtn" class="btn-primary">Save & Start Learning</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+  </div>
+
+  <!-- App Scripts -->
+  <script src="js/storage.js"></script>
+  <script src="js/gemini.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
