@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PDF Question Answerer</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; background: transparent; color: #222; }
+    h1 { text-align: center; color: white; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); }
+    .card { background: rgba(255, 255, 255, 0.92); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
+    button { background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; }
+    button:disabled { background: #94a3b8; cursor: default; }
+    input[type="text"] { width: 70%; padding: 9px; border: 1px solid #ccc; border-radius: 5px; }
+    .step { padding: 8px 0; border-bottom: 1px solid #eee; }
+    .error { color: #b91c1c; }
+    .hidden { display: none; }
+    #answer { white-space: pre-wrap; margin-top: 15px; line-height: 1.5; }
+    .source { background: #eef3ff; padding: 10px; border-radius: 5px; margin-top: 8px; font-size: 14px; }
+    #bg-video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; }
+  </style>
+</head>
+<body>
+  <!-- The background video plays behind everything -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="/static/product-parts-exploding.mp4" type="video/mp4">
+  </video>
+
+  <h1>PDF Question Answerer</h1>
+
+  <div class="card">
+    <h2>1. Upload a PDF</h2>
+    <form id="upload-form">
+      <input type="file" id="pdf-file" accept=".pdf">
+      <button type="submit" id="upload-button">Process PDF</button>
+    </form>
+    <p id="upload-message"></p>
+    <div id="steps"></div>
+  </div>
+
+  <div class="card hidden" id="ask-card">
+    <h2>2. Ask a question</h2>
+    <form id="ask-form">
+      <input type="text" id="question" placeholder="What is this document about?">
+      <button type="submit" id="ask-button">Ask</button>
+    </form>
+    <div id="answer"></div>
+    <div id="sources"></div>
+  </div>
+
+  <script>
+    const SERVER_HELP = "Could not reach the server. Run 'python app.py' in the terminal, then open http://127.0.0.1:5000 in your browser. Do not use the preview inside claude.ai.";
+
+    let currentDocId = null;
+
+    const uploadForm = document.getElementById("upload-form");
+    const fileInput = document.getElementById("pdf-file");
+    const uploadButton = document.getElementById("upload-button");
+    const uploadMessage = document.getElementById("upload-message");
+    const stepsBox = document.getElementById("steps");
+
+    const askCard = document.getElementById("ask-card");
+    const askForm = document.getElementById("ask-form");
+    const questionInput = document.getElementById("question");
+    const askButton = document.getElementById("ask-button");
+    const answerBox = document.getElementById("answer");
+    const sourcesBox = document.getElementById("sources");
+
+    // Upload the PDF and run the pipeline
+    uploadForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      if (fileInput.files.length === 0) {
+        uploadMessage.textContent = "Please choose a PDF first.";
+        uploadMessage.className = "error";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("pdf", fileInput.files[0]);
+
+      uploadButton.disabled = true;
+      uploadButton.textContent = "Processing...";
+      uploadMessage.className = "";
+      uploadMessage.textContent = "Processing your PDF... this can take a minute the first time.";
+      stepsBox.textContent = "";
+
+      try {
+        const response = await fetch("/upload", { method: "POST", body: formData });
+        const data = await response.json();
+
+        if (!response.ok) {
+          uploadMessage.textContent = data.error;
+          uploadMessage.className = "error";
+        } else {
+          currentDocId = data.doc_id;
+          uploadMessage.textContent = "Done! Your PDF is ready. Ask a question below.";
+          showSteps(data.steps);
+          askCard.classList.remove("hidden");
+        }
+      } catch (error) {
+        uploadMessage.textContent = SERVER_HELP;
+        uploadMessage.className = "error";
+        console.log("Upload error:", error);
+      }
+
+      uploadButton.disabled = false;
+      uploadButton.textContent = "Process PDF";
+    });
+
+    // Shows each pipeline step and what it did
+    function showSteps(steps) {
+      for (const step of steps) {
+        const row = document.createElement("div");
+        row.className = "step";
+        row.textContent = step.name + ": " + step.detail;
+        stepsBox.appendChild(row);
+      }
+    }
+
+    // Ask a question about the uploaded PDF
+    askForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const question = questionInput.value.trim();
+      if (question === "" || currentDocId === null) {
+        return;
+      }
+
+      askButton.disabled = true;
+      answerBox.textContent = "Thinking...";
+      sourcesBox.textContent = "";
+
+      try {
+        const response = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ doc_id: currentDocId, question: question })
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          answerBox.textContent = data.error;
+        } else {
+          answerBox.textContent = data.answer;
+          for (const passage of data.sources) {
+            const box = document.createElement("div");
+            box.className = "source";
+            box.textContent = passage;
+            sourcesBox.appendChild(box);
+          }
+        }
+      } catch (error) {
+        answerBox.textContent = SERVER_HELP;
+        console.log("Ask error:", error);
+      }
+
+      askButton.disabled = false;
+    });
+  </script>
+</body>
+</html>
